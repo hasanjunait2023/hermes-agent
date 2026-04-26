@@ -71,6 +71,44 @@ if [ ! -f "$HERMES_HOME/.env" ]; then
     cp "$INSTALL_DIR/.env.example" "$HERMES_HOME/.env"
 fi
 
+# Mirror gateway access-control env vars from the container environment into
+# the persisted user .env. Gateway startup treats ~/.hermes/.env as
+# authoritative and loads it with override=True, so values injected by the
+# orchestrator (Coolify, docker compose, etc.) must be written here to avoid
+# stale blank/template entries winning on restart.
+_sync_env_var_to_user_env() {
+    local key="$1"
+    local value="${!key-}"
+    [ -n "$value" ] || return 0
+    python3 - "$HERMES_HOME/.env" "$key" "$value" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+key = sys.argv[2]
+value = sys.argv[3]
+prefix = f"{key}="
+lines = path.read_text(encoding="utf-8").splitlines()
+out = []
+updated = False
+for line in lines:
+    stripped = line.lstrip()
+    if line.startswith(prefix) or stripped.startswith(f"#{prefix}") or stripped.startswith(f"# {prefix}"):
+        out.append(f"{key}={value}")
+        updated = True
+    else:
+        out.append(line)
+if not updated:
+    out.append(f"{key}={value}")
+path.write_text("\n".join(out) + "\n", encoding="utf-8")
+PY
+}
+for _gateway_env in     TELEGRAM_ALLOWED_USERS     DISCORD_ALLOWED_USERS     SLACK_ALLOWED_USERS     WHATSAPP_ALLOWED_USERS     GATEWAY_ALLOW_ALL_USERS
+
+do
+    _sync_env_var_to_user_env "$_gateway_env"
+done
+
 # config.yaml
 if [ ! -f "$HERMES_HOME/config.yaml" ]; then
     CONFIG_TEMPLATE="$INSTALL_DIR/cli-config.yaml.example"
