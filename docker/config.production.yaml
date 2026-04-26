@@ -1,0 +1,91 @@
+# Production-safe bootstrap config for self-hosted JAMAL/Hermes containers.
+# Used only on first boot when HERMES_USE_PRODUCTION_DEFAULTS=1 and no existing
+# $HERMES_HOME/config.yaml is present.
+
+model:
+  default: "anthropic/claude-sonnet-4"
+  provider: "openrouter"
+  base_url: "https://openrouter.ai/api/v1"
+
+terminal:
+  backend: "local"
+  cwd: "/opt/data/workspace"
+  timeout: 180
+  docker_mount_cwd_to_workspace: false
+  lifetime_seconds: 300
+  container_cpu: 1
+  container_memory: 5120
+  container_disk: 51200
+  container_persistent: true
+
+browser:
+  inactivity_timeout: 120
+
+compression:
+  enabled: true
+  threshold: 0.35
+  target_ratio: 0.15
+  protect_last_n: 12
+
+prompt_caching:
+  cache_ttl: "5m"
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  memory_char_limit: 2200
+  user_char_limit: 1375
+  nudge_interval: 10
+  flush_min_turns: 6
+
+session_reset:
+  mode: both
+  idle_minutes: 240
+  at_hour: 4
+
+group_sessions_per_user: true
+
+streaming:
+  enabled: false
+
+skills:
+  creation_nudge_interval: 15
+
+agent:
+  max_turns: 60
+  gateway_timeout: 1800
+  verbose: false
+  reasoning_effort: "medium"
+
+display:
+  compact: true
+  tool_progress: new
+  interim_assistant_messages: false
+  busy_input_mode: interrupt
+  background_process_notifications: failures
+  bell_on_complete: false
+  show_reasoning: false
+  streaming: true
+  skin: default
+
+platform_toolsets:
+  cli: [hermes-cli]
+  telegram: [hermes-telegram]
+  discord: [hermes-discord]
+  whatsapp: [hermes-whatsapp]
+  slack: [hermes-slack]
+  signal: [hermes-signal]
+  homeassistant: [hermes-homeassistant]
+  qqbot: [hermes-qqbot]
+
+stt:
+  enabled: true
+  local:
+    model: "base"
+
+code_execution:
+  timeout: 300
+  max_tool_calls: 50
+
+delegation:
+  max_iterations: 50
