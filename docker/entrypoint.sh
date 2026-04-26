@@ -103,11 +103,18 @@ if not updated:
 path.write_text("\n".join(out) + "\n", encoding="utf-8")
 PY
 }
+_gateway_sync_count=0
 for _gateway_env in     TELEGRAM_ALLOWED_USERS     DISCORD_ALLOWED_USERS     SLACK_ALLOWED_USERS     WHATSAPP_ALLOWED_USERS     GATEWAY_ALLOW_ALL_USERS
 
 do
+    if [ -n "${!_gateway_env-}" ]; then
+        _gateway_sync_count=$((_gateway_sync_count + 1))
+    fi
     _sync_env_var_to_user_env "$_gateway_env"
 done
+if [ "$_gateway_sync_count" -gt 0 ]; then
+    echo "Synced $_gateway_sync_count gateway access-control env var(s) into persisted .env"
+fi
 
 # config.yaml
 if [ ! -f "$HERMES_HOME/config.yaml" ]; then
