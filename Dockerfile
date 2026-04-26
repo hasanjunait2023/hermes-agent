@@ -32,7 +32,7 @@ COPY package.json package-lock.json ./
 COPY web/package.json web/package-lock.json web/
 
 RUN npm install --prefer-offline --no-audit && \
-    npx playwright install --with-deps chromium --only-shell && \
+    npx playwright install chromium --only-shell && \
     (cd web && npm install --prefer-offline --no-audit) && \
     npm cache clean --force
 
