@@ -143,19 +143,28 @@ def load_hermes_dotenv(
     hermes_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
 ) -> list[Path]:
-    """Load Hermes environment files with user config taking precedence.
+    """Load Hermes environment files with production-safe precedence.
 
     Behavior:
-    - `~/.hermes/.env` overrides stale shell-exported values when present.
+    - in local/dev mode, `~/.hermes/.env` overrides stale shell-exported values
+      when present.
+    - when `HERMES_USE_PRODUCTION_DEFAULTS` is enabled, existing process env
+      wins so container/runtime secrets from the orchestrator are not masked by
+      persisted user `.env` files.
     - project `.env` acts as a dev fallback and only fills missing values when
       the user env exists.
-    - if no user env exists, the project `.env` also overrides stale shell vars.
+    - if no user env exists, the project `.env` also overrides stale shell vars
+      in dev mode, but not in production-defaults mode.
     """
     loaded: list[Path] = []
 
     home_path = Path(hermes_home or os.getenv("HERMES_HOME", Path.home() / ".hermes"))
     user_env = home_path / ".env"
     project_env_path = Path(project_env) if project_env else None
+
+    production_defaults = os.getenv("HERMES_USE_PRODUCTION_DEFAULTS", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
 
     # Fix corrupted .env files before python-dotenv parses them (#8908).
     if user_env.exists():
@@ -164,11 +173,11 @@ def load_hermes_dotenv(
         _sanitize_env_file_if_needed(project_env_path)
 
     if user_env.exists():
-        _load_dotenv_with_fallback(user_env, override=True)
+        _load_dotenv_with_fallback(user_env, override=not production_defaults)
         loaded.append(user_env)
 
     if project_env_path and project_env_path.exists():
-        _load_dotenv_with_fallback(project_env_path, override=not loaded)
+        _load_dotenv_with_fallback(project_env_path, override=(not loaded) and (not production_defaults))
         loaded.append(project_env_path)
 
     return loaded
