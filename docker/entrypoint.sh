@@ -73,7 +73,11 @@ fi
 
 # config.yaml
 if [ ! -f "$HERMES_HOME/config.yaml" ]; then
-    cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
+    CONFIG_TEMPLATE="$INSTALL_DIR/cli-config.yaml.example"
+    if [ "${HERMES_USE_PRODUCTION_DEFAULTS:-0}" = "1" ] && [ -f "$INSTALL_DIR/docker/config.production.yaml" ]; then
+        CONFIG_TEMPLATE="$INSTALL_DIR/docker/config.production.yaml"
+    fi
+    cp "$CONFIG_TEMPLATE" "$HERMES_HOME/config.yaml"
 fi
 
 # SOUL.md
